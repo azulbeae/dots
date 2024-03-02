@@ -1,0 +1,45 @@
+#!/bin/sh
+ipfw -q -f flush
+cmd="ipfw add"
+rout="Local router IP"
+pif="re0"
+vpin="in via $pif"
+vpot="out via $pif"
+ata="from any to any"
+daf="deny all from"
+ks="keep-state"
+awt="allow tcp"
+awu="allow udp"
+dnss="9.9.9.9"
+fa="from any to"
+dtcp="deny tcp $ata"
+$cmd 00005 allow all $ata		via xl0
+$cmd 00010 allow all $ata		via lo0
+$cmd 00101 check-state
+$cmd 00110 $awt $fa $dnss	53	$vpot setup $ks
+$cmd 00111 $awu $fa $dnss	53	$vpot $ks
+$cmd 00120 allow udp from any to $rout 67	$vpot $ks 
+$cmd 00200 $awt $ata		80	$vpot setup $ks
+$cmd 00220 $awt $ata		443	$vpot setup $ks
+$cmd 00250 allow icmp		$ata	$vpot $ks
+$cmd 00260 $awu $ata		123	$vpot $ks
+$cmd 00299 deny log all		$ata	$vpot
+$cmd 00300 $daf 192.168.0.0/16	to any	$vpin
+$cmd 00301 $daf 172.16.0.0/12	to any	$vpin
+$cmd 00302 $daf 10.0.0.0/8	to any	$vpin
+$cmd 00303 $daf 169.254.0.0/6	to any	$vpin
+$cmd 00304 $daf 192.0.2.0/24	to any	$vpin
+$cmd 00305 $daf 204.152.64.0/23	to any	$vpin
+$cmd 00306 $daf 224.0.0.0/3	to any	$vpin
+$cmd 00307 $daf 0.0.0.0/8	to any	$vpin
+$cmd 00308 $daf 127.0.0.0/8	to any	$vpin
+$cmd 00310 deny icmp		$ata	$vpin
+$cmd 00315 $dtcp		113	$vpin
+$cmd 00320 $dtcp		137	$vpin
+$cmd 00321 $dtcp		138	$vpin
+$cmd 00322 $dtcp		139	$vpin
+$cmd 00323 $dtcp		81	$vpin
+$cmd 00330 deny all $ata frag		$vpin
+$cmd 00332 $dtcp established		$vpin
+$cmd 00499 deny log all		$ata	$vpin
+$cmd 00999 deny log all		$ata
