@@ -1,0 +1,10 @@
+#!/bin/sh 
+grep -q "microcode" /boot/loader.conf && echo "Already set up" && exit 0 
+sysctl -n hw.model | grep -q AMD && 
+    echo "Using /boot/firmware/amd.ucode" &&
+    echo 'cpu_microcode_load="YES"' >> /boot/loader.conf &&     
+    echo 'cpu_microcode_name="/boot/firmware/amd-ucode.bin"' >> /boot/loader.conf 
+sysctl -n hw.model | grep -q Intel && 
+    echo "Using /boot/firmware/amd.ucode" &&
+    echo 'cpu_microcode_load="YES"' >> /boot/loader.conf &&
+    echo 'cpu_microcode_name="/boot/firmware/intel-ucode.bin"' >> /boot/loader.conf
