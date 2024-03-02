@@ -1,0 +1,43 @@
+# Use re if you have a Reltek adapter, em if you have an Intel adapter 
+intf="re0 or em0"
+# Common LAN setups are in the rfc6890 section
+lanf="LAN/CIDR prefix"
+# Likely is set to the first assigned local IP on your LAN
+rout="Local router IP"
+tup="{ tcp udp }"
+pon="pass out on"
+pin="pass in on"
+ipt="re0 inet proto"
+table <rfc6890>  { 0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12	\
+		   192.0.0.0/24 192.0.0.0/19 192.0.2.0/24 192.88.99.0/24 192.168.0.0/16		\
+		   198.10.0.0/15 198.51.100.0/24 203.0.113.0/24 204.152.64.0/23 224.0.0.0/3	\
+		   240.0.0.0/4 255.255.255.255/32 }
+table <loeconn>  { 104.21.8.116 104.236.98.39 }
+table <loerooms> { 45.55.251.227 46.101.119.196 165.227.111.123 207.154.211.37 } 
+table <matrixh>  { 45.21.97.253 }
+# Change this to whatever you have in /etc/resolv.conf
+table <dnsserv>  { 9.9.9.9 }
+set skip on lo0
+set block-policy drop
+scrub in all fragment reassemble max-mss 1440
+antispoof quick for $intf
+antispoof quick for $intf inet
+block in  quick on $intf from <rfc6890>
+block return out quick on egress to <rfc6890>
+block in log all
+block in  quick inet6
+block in  quick from urpf-failed
+block in  quick from no-route to any
+block out all
+block out quick inet6
+block out quick on $intf from any to no-route
+block quick proto $tup from any port = 0 to any
+block	quick proto $tup from any to any port = 0
+$pon $ipt $tup to   <dnsserv>	port 53
+$pon $ipt tcp  to   $lanf	port 67
+$pin $ipt tcp  from $rout to	port 68 
+$pon $ipt udp  to	 	port 123
+$pon $ipt tcp  to	 	port 443
+$pon $ipt $tup to   <matrixh>	port 8448
+$pon $ipt udp  to   <loeconn>	port 14000
+$pon $ipt udp  to   <loerooms>	port 14100:14131
