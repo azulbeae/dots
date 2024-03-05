@@ -1,0 +1,41 @@
+#!/bin/sh
+UPTIME=$(bc -le `date +%s`-`sysctl -n kern.boottime | awk '{print substr($4, 1, length($4)-1)}'`)
+OSNAME=$(uname -rp)
+PKGS=$(pkg info | wc -l | awk '{print $1}')
+SHELLNAME=$(echo $SHELL | rev | cut -d/ -f1 | rev)
+CPU=$(sysctl -n hw.model)
+GPU=$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2)
+TERMNAME=$(env | grep -o 'Alacritty\|kitty\|st' | sort | uniq)
+MEMP=$(printf '%.2f' "$(bc -le "100 - 100*(`sysctl -n hw.physmem`-`sysctl -n hw.pagesize`*$(bc -le `sysctl -n vm.stats.vm.v_cache_count`*`sysctl -n vm.stats.vm.v_free_count`+`sysctl -n vm.stats.vm.v_inactive_count`))/`sysctl -n hw.physmem`")")
+c1=$(tput setaf 7)
+c2=$(tput setaf 13)
+USER=`whoami`
+HOST=`hostname` 
+UNDERLINE=$(echo -e -${USER}${HOST} | tr .1234567890@qwertyuiopasdfghjklzxcvbnm -)
+normal=$(tput sgr0)
+c0to7=$(for i in `seq 0 7` ; do
+                colr=$(tput setab $i)
+                printf "%s" "${colr}    ${normal}"
+        done
+        echo "")
+c8to15=$(for x in `seq 8 15` ; do
+                colr=$(tput setab $x)
+                printf "%s" "${colr}    ${normal}"
+        done
+        echo "")
+wait
+echo -e "  ${c2}/ \`  .                   ${c1}. \` .  ${USER}${c2}@${c1}${HOST}
+  ${c2}\`\`      \`,..${c1}.....  . \`       -  ${UNDERLINE}
+  ${c2}su    _-\`        ${c1}\`/s:        u  O.S. ${c2}FreeBSD ${OSNAME}
+  ${c2} su\`:.            ${c1}:u        u-  TIME ${c2}${UPTIME}
+    ${c2}u/               ${c1}-/\`    .u/   PKGS ${c2}${PKGS}
+   ${c2}.-                  ${c1}::/su+:\`   SH : ${c2}${SHELLNAME}
+   ${c2}/                      ${c1}\`\`\`\    TERM ${c2}${TERMNAME}
+  ${c2}.                           ${c1}.   CPU: ${c2}${CPU}
+  ${c2}:                           ${c1}:   GPU: ${c2}${GPU}
+  ${c2}'                           ${c1}'   MEM% ${c2}${MEMP}%
+   ${c2}\\                         ${c1}/
+    ${c2}\\                       ${c1}/
+     ${c2}\`,                   ${c1},\`
+       ${c1}\`.               .\`        ${c0to7}
+         ${c1}\`\`--.......--\`	          ${c8to15}"
