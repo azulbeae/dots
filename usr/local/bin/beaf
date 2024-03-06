@@ -4,7 +4,7 @@ PAGESIZE=`sysctl -n hw.pagesize`
 CACHEC=`sysctl -n vm.stats.vm.v_cache_count`
 FREEC=`sysctl -n vm.stats.vm.v_free_count`
 INACTC=`sysctl -n vm.stats.vm.v_inactive_count`
-MEMP=$(printf '%s' $((10000 - 10000*(${PHYSMEM}-${PAGESIZE}*(${CACHEC}*${FREEC}+${INACTC}))/${PHYSMEM})) | sed -e "s/\(..$\)/.\1%/")
+MEMP=$(printf '%s' $((10000 - 10000*(${PHYSMEM}-${PAGESIZE}*(${CACHEC}*${FREEC}+${INACTC}))/${PHYSMEM})) | sed -e "s/\(..$\)/.\1%/" &)
 SECS=$((`date +%s` - `sysctl -n kern.boottime | grep -oE "[0-9]+" | head -1`))
 USER=`whoami`
 HOST=`hostname`
@@ -16,39 +16,30 @@ TIMEM=$(printf '%s' "$((${SECS}/60%60))m " | grep -v "^0m $")
 FBSDINFO=$(uname -rp)
 PKGS=$(pkg info | wc -l | awk '{print $1}')
 SHELLNAME=$(printf '%s' "$SHELL" | rev | cut -d/ -f1 | rev)
-WM=$(env | grep -o 'sway\|hyprland\|haiku' | uniq)
+WM=$(printf "%s" "$(env | grep -o 'sway\|hyprland\|haiku' || printf '%s' 'None loaded')" | uniq)
 CPU=$(sysctl -n hw.model)
-GPU=$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2 | tr '\n' ' ')
-TERMNAME=$(env | grep -o 'Alacritty\|kitty\|st' | sort | uniq)
-HEIGHT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.height')
-WIDTH=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.width')
+GPU=$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2)
+TERMNAME=$(printf '%s' "$(env | grep -o 'Alacritty\|kitty\|st' || printf '%s' 'getty')" | sort | uniq)
+[ "$WM" != 'None loaded' ] && HEIGHT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.height') && WIDTH=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.width')x || HEIGHT=$(tput lines) 
+[ "$WM" != 'None loaded' ] || WIDTH=$(tput cols)x
 c1=$(tput setaf 7)
 c2=$(tput setaf 13)
-normal=$(tput sgr0)
-c0to7=$(for i in `seq 0 7` ; do
-                colr=$(tput setab $i)
-                printf "%s" "${colr}    ${normal}"
-        done)
-c8to15=$(for x in `seq 8 15` ; do
-                colr=$(tput setab $x)
-                printf "%s" "${colr}    ${normal}"
-        done)
 cat <<EOF
 
-  ${c2}. \`  .                  ${c1}.  \` .  ${USER}${c2}@${c1}${HOST}
-  ${c2}-       \`_..${c1}...._   . \`      -  ${UNDERLINE}
-  ${c2}::.   _-\`        ${c1}\`/:        .:  O.S. ${c2}FreeBSD ${FBSDINFO}
-  ${c2} ::::-            ${c1}\\:.      .::  TIME ${c2}${TIMEY}${TIMED}${TIMEH}${TIMEM}
-    ${c2}::               ${c1}\`:\`.  .:::\`  PKGS ${c2}${PKGS}
-    ${c2}:                  ${c1}\`::::::\`   SH.: ${c2}${SHELLNAME}
-   ${c2}/                      ${c1}\`\`\`\    RES: ${c2}${WIDTH}x${HEIGHT}
-  ${c2}.                           ${c1}.   W.M. ${c2}${WM}
-  ${c2}:                           ${c1}:   TERM ${c2}${TERMNAME}
-  ${c2}'                           ${c1}'   CPU: ${c2}${CPU}
-   ${c2}\\                         ${c1}/    GPU: ${c2}${GPU}
-    ${c2}\\                       ${c1}/     MEM% ${c2}${MEMP}
-     ${c2}\`,                   ${c1},\`
-       ${c1}\`.               .\`        ${c0to7}
-         ${c1}\`\`--.......--\`\`          ${c8to15}
+${c1}  ${c2}. \`  .${c1}                  .  \` .  ${USER}${c2}@${c1}${HOST}
+${c1}  ${c2}.       \`_..${c1}...._   . \`      .  ${UNDERLINE}
+${c1}  ${c2}::.   _-\`        ${c1}\`::        .:  O.S. ${c2}FreeBSD ${FBSDINFO}
+${c1}   ${c2}:::.\`            ${c1}\\:       .::  TIME ${c2}${TIMEY}${TIMED}${TIMEH}${TIMEM}
+${c1}    ${c2}::               ${c1}\`:.   .:::\`  PKGS ${c2}${PKGS}
+${c1}    ${c2}:                  ${c1}\`::::::\`   SH.: ${c2}${SHELLNAME}
+${c1}   ${c2}/                      ${c1}\`\`\`\    RES: ${c2}${WIDTH}${HEIGHT}
+${c1}  ${c2}.                           ${c1}.   W.M. ${c2}${WM}
+${c1}  ${c2}:                           ${c1}:   TERM ${c2}${TERMNAME}
+${c1}  ${c2}'                           ${c1}'   CPU: ${c2}${CPU}
+${c1}   ${c2}\\                         ${c1}/    GPU: ${c2}${GPU}
+${c1}    ${c2}\\                       ${c1}/     MEM% ${c2}${MEMP}
+${c1}     ${c2}\`,                   ${c1},\`
+${c1}       \`.               .\`        [48;5;0m    [m[48;5;1m    [m[48;5;2m    [m[48;5;3m    [m[48;5;4m    [m[48;5;5m    [m[48;5;6m    [m[48;5;7m    [m
+${c1}         ${c1}\`\`--.......--\`\`          [48;5;8m    [m[48;5;9m    [m[48;5;10m    [m[48;5;11m    [m[48;5;12m    [m[48;5;13m    [m[48;5;14m    [m[48;5;15m    [m
 
 EOF
