@@ -1,13 +1,13 @@
 #!/bin/sh
-PHYSMEM=`sysctl -n hw.physmem`
-PAGESIZE=`sysctl -n hw.pagesize`
-CACHEC=`sysctl -n vm.stats.vm.v_cache_count`
-FREEC=`sysctl -n vm.stats.vm.v_free_count`
-INACTC=`sysctl -n vm.stats.vm.v_inactive_count`
+PHYSMEM=$(sysctl -n hw.physmem)
+PAGESIZE=$(sysctl -n hw.pagesize)
+CACHEC=$(sysctl -n vm.stats.vm.v_cache_count)
+FREEC=$(sysctl -n vm.stats.vm.v_free_count)
+INACTC=$(sysctl -n vm.stats.vm.v_inactive_count)
 MEMP=$(printf '%s' $((10000 - 10000*(${PHYSMEM}-${PAGESIZE}*(${CACHEC}*${FREEC}+${INACTC}))/${PHYSMEM})) | sed -e "s/\(..$\)/.\1%/" &)
-SECS=$((`date +%s` - `sysctl -n kern.boottime | grep -oE "[0-9]+" | head -1`))
-USER=`whoami`
-HOST=`hostname`
+SECS=$(($(date +%s) - $(sysctl -n kern.boottime | grep -oE "[0-9]+" | head -1)))
+USER=$(whoami)
+HOST=$(hostname)
 UNDERLINE=$(printf '%s' "-${USER}${HOST}" | tr ",.?<>/;'}{][=+_1234567890!@#$%^&*()qwertyuiopasdfghjklzxcvbnm" -)
 TIMEY=$(printf '%s' "$((${SECS}/31536000))y " | grep -v "^0y $")
 TIMED=$(printf '%s' "$((${SECS}/86400%31536000))d " | grep -v "^0d $")
@@ -15,10 +15,10 @@ TIMEH=$(printf '%s' "$((${SECS}/3600%86400))h " | grep -v "^0h $")
 TIMEM=$(printf '%s' "$((${SECS}/60%60))m " | grep -v "^0m $") 
 FBSDINFO=$(uname -rp)
 PKGS=$(pkg info | wc -l | tr -d ' ')
-WM=$(printf "%s" "$(env | grep -o 'sway\|hyprland\|hikari' || printf '%s' 'None loaded')" | uniq)
+WM=$(printf "%s" "$(env | grep -o 'sway\|hyprland\|haiku' || printf '%s' 'None loaded')" | uniq)
 SHELLNAME=$(ps -p $(ps -p $$ -o ppid=) -o comm=)
 CPU=$(sysctl -n hw.model)
-GPU=$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2)
+GPU=$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2 | tr '\n' :)
 TERMNAME=$(printf '%s' "$(env | grep -o 'Alacritty\|kitty\|st' || printf '%s' 'getty')" | sort | uniq)
 [ "$WM" != 'None loaded' ] && HEIGHT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.height') && WIDTH=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.width')x || HEIGHT=$(tput lines) 
 [ "$WM" != 'None loaded' ] || WIDTH=$(tput cols)x
