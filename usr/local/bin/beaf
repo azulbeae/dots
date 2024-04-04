@@ -1,43 +1,86 @@
 #!/bin/sh
-PHYSMEM=$(sysctl -n hw.physmem)
-PAGESIZE=$(sysctl -n hw.pagesize)
-CACHEC=$(sysctl -n vm.stats.vm.v_cache_count)
-FREEC=$(sysctl -n vm.stats.vm.v_free_count)
-INACTC=$(sysctl -n vm.stats.vm.v_inactive_count)
-MEMP=$(printf '%s' $((10000 - 10000*(${PHYSMEM}-${PAGESIZE}*(${CACHEC}*${FREEC}+${INACTC}))/${PHYSMEM})) | sed -e "s/\(..$\)/.\1%/" &)
-SECS=$(($(date +%s) - $(sysctl -n kern.boottime | grep -oE "[0-9]+" | head -1)))
-USER=$(whoami)
-HOST=$(hostname)
-UNDERLINE=$(printf '%s' "-${USER}${HOST}" | tr ",.?<>/;'}{][=+_1234567890!@#$%^&*()qwertyuiopasdfghjklzxcvbnm" -)
-TIMEY=$(printf '%s' "$((${SECS}/31536000))y " | grep -v "^0y $")
-TIMED=$(printf '%s' "$((${SECS}/86400%31536000))d " | grep -v "^0d $")
-TIMEH=$(printf '%s' "$((${SECS}/3600%86400))h " | grep -v "^0h $")
-TIMEM=$(printf '%s' "$((${SECS}/60%60))m " | grep -v "^0m $") 
-FBSDINFO=$(uname -rp)
-PKGS=$(pkg info | wc -l | tr -d ' ')
-WM=$(printf "%s" "$(env | grep -o 'sway\|hyprland\|haiku' || printf '%s' 'None loaded')" | uniq)
-SHELLNAME=$(ps -p $(ps -p $$ -o ppid=) -o comm=)
-CPU=$(sysctl -n hw.model)
-GPU=$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2 | tr '\n' :)
-TERMNAME=$(printf '%s' "$(env | grep -o 'Alacritty\|kitty\|st' || printf '%s' 'getty')" | sort | uniq)
-[ "$WM" != 'None loaded' ] && HEIGHT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.height') && WIDTH=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.width')x || HEIGHT=$(tput lines) 
-[ "$WM" != 'None loaded' ] || WIDTH=$(tput cols)x
+
+# Define colours to be used using tput(1)
 c1=$(tput setaf 7)
 c2=$(tput setaf 13)
+
+# Get username with whoami(1) and hostname with hostname(1) 
+USER=$(whoami)
+HOST=$(hostname)
+
+# Get the line seperator with tr(1). The extra - is added to account for the "@" between USER and HOST.
+UNDERLINE=$(printf "${USER}${HOST}-" | tr ",.?<>/;'}{][=+_1234567890!@#$%^&*()qwertyuiopasdfghjklzxcvbnm" -)
+
+# Get OS information: implementation [s], release level [r], and processor architecture [p] with uname(1)
+FBSDINFO="${c1}O.S. ${c2}$(uname -srp)"
+
+# Get the current time with date(1) and boot time with sysctl(8).
+# Take the difference with built in sh(1) support to get the uptime in seconds.
+SECS=$(($(date +%s) - $(sysctl -n kern.boottime | grep -oE "[0-9]+" | head -1)))
+# Convert seconds into human readable format with maths using built in sh(1) support.
+# If the value of any unit of time is equal to 0, silence it with sed(1).
+TIMEM=$(printf "$((${SECS}/60%60))m " | sed 's/^0m $//')
+TIMEH=$(printf "$((${SECS}/3600%86400))h " | sed 's/^0h $//')
+TIMED=$(printf "$((${SECS}/86400%31536000))d " | sed 's/^0d $//')
+TIMEY=$(printf "$((${SECS}/31536000))y " | sed 's/^0y $//')
+# Output all values and respective units into the variable TIME
+TIME="${c1}TIME ${c2}${TIMEY}${TIMED}${TIMEH}${TIMEM}"
+
+# Get a list of all installed packages with pkg-info(8), then use wc(1) with the [l] option to count the
+# lines, and tr(1) to remove the indentation from wc(1).
+PKGS="${c1}PKGS ${c2}$(pkg info | wc -l | tr -d ' ')"
+
+# Get ppid of beaf ($$), then get command name of the ppid with the ps(1) command.
+SHELLNAME="${c1}SH|| ${c2}$(ps -p $(ps -p $$ -o ppid=) -o comm=)"
+
+# Get all set environment variables with env(1). Use grep(1) to match for =<TerminalName>. Use tr(1) to
+# remove the "=". If no terminal emulator is detected, assume getty(8) is in use using OR (||) and
+# printf(1). Use sort(1) with the [u] option to remove duplicates. This does not support all terminal
+# emulators, but it is the most simple way to do this as there is no standard enviornment variable all
+#  terminal emulators impliment. 
+TERMNAME="${c1}TERM ${c2}$(printf "$(env | grep -o '=WezTerm\|=Alacritty\|=kitty\|=st\|=foot' | tr -d '=' || printf 'getty')" | sort -u)"
+
+# Get the CPU name with sysctl(8).
+CPU="${c1}CPU: ${c2}$(sysctl -n hw.model)"
+
+# Get GPU(s) name(s) with pciconf(8) to print pci devices [l] and information [v]. In the lines after 
+# every instance of the string "vgapci" is a GPU on the line with the string "device". Get said lines
+# with grep(1). Then, use cut(1) get the device name which is surrounded in apostrophes. Remove last 
+# newline with printf(1). Seperate names with a comma if there are multiple GPUs with tr(1).
+GPU="${c1}GPU: ${c2}$(printf "$(pciconf -lv | grep -A4 vgapci | grep "device. *=" | cut -d "'" -f2)" | tr '\n' ',')"
+
+# Check display server. If there is none, say so.
+WM=$(printf "$XDG_CURRENT_SESSION")
+[ -z "$WM" ] && WM="None loaded"
+[ "$WM" != 'None loaded' ] && HEIGHT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.height') && \
+WIDTH=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.width')x || HEIGHT=$(tput lines) 
+[ "$WM" != 'None loaded' ] || WIDTH=$(tput cols)x
+WM="W.M. ${c2}${WM}"
+RES="${c1}RES: ${c2}${WIDTH}${HEIGHT}"
+
+# Get memory use with sysctl(8)
+PH=$(sysctl -n hw.physmem)
+PG=$(sysctl -n hw.pagesize)
+CA=$(sysctl -n vm.stats.vm.v_cache_count)
+FR=$(sysctl -n vm.stats.vm.v_free_count)
+IN=$(sysctl -n vm.stats.vm.v_inactive_count)
+# Do maths with built in sh(1) support and bc(1) then with printf(1)
+MEMP="${c1}MEM% ${c2}$(printf '%s%%' $(printf $((10000-10000*($PH-$PG*($CA*$FR+$IN))/$PH))/100 | bc -lS 2))"
+
 cat <<EOF
 
-${c1}  ${c2}. \`  .${c1}                  .  \` .  ${USER}${c2}@${c1}${HOST}
-${c1}  ${c2}.       \`_..${c1}...._   . \`      .  ${UNDERLINE}
-${c1}  ${c2}::.   _-\`        ${c1}\`::        .:  O.S. ${c2}FreeBSD ${FBSDINFO}
-${c1}   ${c2}:::.\`            ${c1}\\:       .::  TIME ${c2}${TIMEY}${TIMED}${TIMEH}${TIMEM}
-${c1}    ${c2}::               ${c1}\`:.   .:::\`  PKGS ${c2}${PKGS}
-${c1}    ${c2}:                  ${c1}\`::::::\`   SH.: ${c2}${SHELLNAME}
-${c1}   ${c2}/                      ${c1}\`\`\`\    RES: ${c2}${WIDTH}${HEIGHT}
-${c1}  ${c2}.                           ${c1}.   W.M. ${c2}${WM}
-${c1}  ${c2}:                           ${c1}:   TERM ${c2}${TERMNAME}
-${c1}  ${c2}'                           ${c1}'   CPU: ${c2}${CPU}
-${c1}   ${c2}\\                         ${c1}/    GPU: ${c2}${GPU}
-${c1}    ${c2}\\                       ${c1}/     MEM% ${c2}${MEMP}
+${c1}  ${c2}. \`  .${c1}                  .  \` .  $USER${c2}@${c1}$HOST
+${c1}  ${c2}.       \`_..${c1}...._   . \`      .  $UNDERLINE
+${c1}  ${c2}::.   _-\`        ${c1}\`::        .:  $FBSDINFO
+${c1}   ${c2}:::.\`            ${c1}\\:       .::  $TIME
+${c1}    ${c2}::               ${c1}\`:.   .:::\`  $PKGS
+${c1}    ${c2}:                  ${c1}\`::::::\`   $SHELLNAME
+${c1}   ${c2}/                      ${c1}\`\`\`\    $RES
+${c1}  ${c2}.                           ${c1}.   $WM
+${c1}  ${c2}:                           ${c1}:   $TERMNAME
+${c1}  ${c2}'                           ${c1}'   $CPU
+${c1}   ${c2}\\                         ${c1}/    $GPU
+${c1}    ${c2}\\                       ${c1}/     $MEMP
 ${c1}     ${c2}\`,                   ${c1},\`
 ${c1}       \`.               .\`        [48;5;0m    [m[48;5;1m    [m[48;5;2m    [m[48;5;3m    [m[48;5;4m    [m[48;5;5m    [m[48;5;6m    [m[48;5;7m    [m
 ${c1}         ${c1}\`\`--.......--\`\`          [48;5;8m    [m[48;5;9m    [m[48;5;10m    [m[48;5;11m    [m[48;5;12m    [m[48;5;13m    [m[48;5;14m    [m[48;5;15m    [m
