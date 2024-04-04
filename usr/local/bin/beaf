@@ -8,10 +8,10 @@ c2=$(tput setaf 13)
 USER=$(whoami)
 HOST=$(hostname)
 
-# Get the line seperator with tr(1). The extra - is added to account for the "@" between USER and HOST.
+# Get the line seperator with tr(1). The extra - is added to account for "@" between USER & HOST.
 UNDERLINE=$(printf "${USER}${HOST}-" | tr '[:rune:]' -)
 
-# Get OS information: implementation [s], release level [r], and processor architecture [p] with uname(1)
+# Get OS info: implementation [s], release level [r], and processor architecture [p] with uname(1)
 FBSDINFO="${c1}O.S. ${c2}$(uname -srp)"
 
 # Get the current time with date(1) and boot time with sysctl(8).
