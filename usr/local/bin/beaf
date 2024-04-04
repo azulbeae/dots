@@ -26,18 +26,18 @@ TIMEY=$(printf "$((${SECS}/31536000))y " | sed 's/^0y $//')
 # Output all values and respective units into the variable TIME
 TIME="${c1}TIME ${c2}${TIMEY}${TIMED}${TIMEH}${TIMEM}"
 
-# Get a list of all installed packages with pkg-info(8), then use wc(1) with the [l] option to count the
-# lines, and tr(1) to remove the indentation from wc(1).
+# Get a list of all installed packages with pkg-info(8), then use wc(1) with the [l] option to count
+# the lines, and tr(1) to remove the indentation from wc(1).
 PKGS="${c1}PKGS ${c2}$(pkg info | wc -l | tr -d ' ')"
 
 # Get the ppid of beaf ($$), then get command name of the ppid with the ps(1) command.
 SHELLNAME="${c1}SH|| ${c2}$(ps -p $(ps -p $$ -o ppid=) -o comm=)"
 
-# Get all set environment variables with env(1). Use grep(1) to match for =<TerminalName>. Use tr(1) to
-# remove the "=". If no terminal emulator is detected, assume getty(8) is in use using OR (||) and
+# Get all set environment variables with env(1). Use grep(1) to match for =<TerminalName>. Use tr(1)
+# to remove the "=". If no terminal emulator is detected, assume getty(8) is in use using OR (||) and
 # printf(1). Use sort(1) with the [u] option to remove duplicates. This does not support all terminal
 # emulators, but it is the most simple way to do this as there is no standard enviornment variable all
-#  terminal emulators impliment. 
+# terminal emulators impliment. 
 TERMNAME="${c1}TERM ${c2}$(printf "$(env | grep -o '=WezTerm\|=Alacritty\|=kitty\|=st\|=foot' || printf 'getty')" | sort -u | tr -d '=')"
 
 # Get the CPU name with sysctl(8).
@@ -52,11 +52,11 @@ GPU="${c1}GPU: ${c2}$(printf "$(pciconf -lv | grep -A4 vgapci | grep "device. *=
 # Check display server. If there is none, say so.
 WM=$(printf "$XDG_CURRENT_SESSION")
 [ -z "$WM" ] && WM="None loaded"
-[ "$WM" != 'None loaded' ] && HEIGHT=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.height') && \
-WIDTH=$(swaymsg -t get_outputs | jq -r '.[] | select(.focused==true).rect.width')x || HEIGHT=$(tput lines) 
-[ "$WM" != 'None loaded' ] || WIDTH=$(tput cols)x
+[ "$WM" != 'None loaded' ] && \
+RES=(swaymsg -pt get_outputs | grep -A1 focused | tail -n1 | cut -d' ' -f5) || \
+RES=$(tput cols)x$(tput lines)
 WM="W.M. ${c2}${WM}"
-RES="${c1}RES: ${c2}${WIDTH}${HEIGHT}"
+RES="${c1}RES: ${c2}${RES}"
 
 # Get memory use with sysctl(8)
 PH=$(sysctl -n hw.physmem)
