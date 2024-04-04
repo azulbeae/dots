@@ -64,7 +64,7 @@ PG=$(sysctl -n hw.pagesize)
 CA=$(sysctl -n vm.stats.vm.v_cache_count)
 FR=$(sysctl -n vm.stats.vm.v_free_count)
 IN=$(sysctl -n vm.stats.vm.v_inactive_count)
-# Do maths with built in sh(1) support and bc(1) then with printf(1)
+# Do maths with built in sh(1) support and bc(1) then format with printf(1)
 MEMP="${c1}MEM% ${c2}$(printf '%s%%' $(printf $((10000-10000*($PH-$PG*($CA*$FR+$IN))/$PH))/100 | bc -lS 2))"
 
 cat <<EOF
