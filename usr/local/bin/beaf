@@ -38,7 +38,7 @@ SHELLNAME="${c1}SH|| ${c2}$(ps -p $(ps -p $$ -o ppid=) -o comm=)"
 # printf(1). Use sort(1) with the [u] option to remove duplicates. This does not support all terminal
 # emulators, but it is the most simple way to do this as there is no standard enviornment variable all
 #  terminal emulators impliment. 
-TERMNAME="${c1}TERM ${c2}$(printf "$(env | grep -o '=WezTerm\|=Alacritty\|=kitty\|=st\|=foot' | tr -d '=' || printf 'getty')" | sort -u)"
+TERMNAME="${c1}TERM ${c2}$(printf "$(env | grep -o '=WezTerm\|=Alacritty\|=kitty\|=st\|=foot' || printf 'getty')" | sort -u | tr -d '=')"
 
 # Get the CPU name with sysctl(8).
 CPU="${c1}CPU: ${c2}$(sysctl -n hw.model)"
