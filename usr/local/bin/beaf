@@ -9,7 +9,7 @@ USER=$(whoami)
 HOST=$(hostname)
 
 # Get the line seperator with tr(1). The extra - is added to account for the "@" between USER and HOST.
-UNDERLINE=$(printf "${USER}${HOST}-" | tr ",.?<>/;'}{][=+_1234567890!@#$%^&*()qwertyuiopasdfghjklzxcvbnm" -)
+UNDERLINE=$(printf "${USER}${HOST}-" | tr '[:rune:]' -)
 
 # Get OS information: implementation [s], release level [r], and processor architecture [p] with uname(1)
 FBSDINFO="${c1}O.S. ${c2}$(uname -srp)"
