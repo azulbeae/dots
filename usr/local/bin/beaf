@@ -56,7 +56,7 @@ WM=$(printf "$XDG_CURRENT_SESSION")
 RES=(swaymsg -pt get_outputs | grep -A1 focused | tail -n1 | cut -d' ' -f5) || \
 RES=$(tput cols)x$(tput lines)
 WM="W.M. ${c2}${WM}"
-RES="${c1}RES: ${c2}${RES}"
+RES="${c1}RES: ${c2}$RES"
 
 # Get memory use with sysctl(8)
 PH=$(sysctl -n hw.physmem)
