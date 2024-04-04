@@ -30,7 +30,7 @@ TIME="${c1}TIME ${c2}${TIMEY}${TIMED}${TIMEH}${TIMEM}"
 # lines, and tr(1) to remove the indentation from wc(1).
 PKGS="${c1}PKGS ${c2}$(pkg info | wc -l | tr -d ' ')"
 
-# Get ppid of beaf ($$), then get command name of the ppid with the ps(1) command.
+# Get the ppid of beaf ($$), then get command name of the ppid with the ps(1) command.
 SHELLNAME="${c1}SH|| ${c2}$(ps -p $(ps -p $$ -o ppid=) -o comm=)"
 
 # Get all set environment variables with env(1). Use grep(1) to match for =<TerminalName>. Use tr(1) to
